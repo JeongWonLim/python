@@ -9,9 +9,8 @@ import datetime #패키지 파일
 ## 스페셜 메소드(Special method)
 특정 상황에서 자동 호출 되는 미리 약속되어 있는 메소드.
 
-## \_\_init\_\_(self, ...)
-파이썬 클래스의 생성자, 객체를 생성할 때 초기 설정 값들을 설정한다.
-
+### \_\_init\_\_(self, ...)
+객체를 생성할 때 초기 설정 값들을 설정한다. **생성자가 아니다!!**
 ```python
 class init:
     def __init__(self):
@@ -23,7 +22,7 @@ cla = init()
 생성자입니다.
 ```
 
-## \_\_call\_\_(self,...)
+### \_\_call\_\_(self,...)
 객체는 함수가 아니다. 하지만 파이썬에서 제공하는 스페셜 메소드 \_\_call\_\_를 사용하면 객체를 함수처럼 사용할 수 있다.
 ```python
 class cal:
@@ -38,6 +37,98 @@ a = cal(10)
 print(a.__call__( 10)) # 100 출력 
 print(a(10)) #100출력 __call__ 메소드가 있으므로 cal 클래스의 인스턴스인 a도 함수처럼 사용 가능하다
 ```
+
+### \_\_new\_\_(self,...)
+파이썬의 생성자. 대부분 생성자를 init으로 알고있는데 init은 생성된 변수들을 초기화만 할 뿐 객체를 생성하지는 않는다.  
+* 생성자의 정의 : 클래스로부터 **객체를 만들어내는** 메소드 
+* \_\_init\_\_과 \_\_new\_\_의 호출 순서
+    + new가 먼저 호출되어 해당 클래스의 인스턴스를 생성하고 init함수를 호출하여 인스턴의 내의 변수가 초기화가 된다.
+
+
+
+
+
+## 메타 클래스(Metaclass)
+
+### 객체와 클래스
+클래스로 만든 객체 == 인스턴스라고 한다. 객체와 인스턴스의 관계가 중요시 되냐 마냐의 차이다. student = People() 이렇게 만든 student는 객체라고도 하고 인스턴스라고도 한다. 무엇이 맞을까? 사실 둘다 맞다. 하지만 관계를 중요시 여긴다면 People 객체의 인스턴스이다 라고 말하는 것이 더 명확할 것 이다. 
+
+### 파이썬에서 클래스
+자바, C++에서의 클래스는 객체를 생성해주는 하나의 틀이였다. 하지만 파이썬에서는 클래스 마저 객체이다. 즉 클래스를 만들어 주는 또 다른 클래스가 있다. 파이썬에서는 객체를 **메타 클래스(Meta Class)** 라고 부른다. 클래스를 만들 때 특별한 규칙을 생성하고 싶다면 메타클래스를 재정의 하면 된다.
+
+### type
+파이썬에 type은 클래스이다. type은 대부분 자료형의 종류를 알아 낼 때 쓰지만 또 다른 기능이 존재한다. type클래스로 새로운 클래스를 만들수 있다. 
+```python
+type(클래스명, (상속받을 클래스), (멤버변수, 멤버함수...))
+
+#예시
+Tor = type ('Tor', (), {})
+```
+위와 같이 type으로도 클래스를 만들 수 있다. 기존에는 class 클래스명:과 같은 방식으로 프로그램이 실행하기전 만들어 놓고 사용했다면 type클래스로 런타임 중에도 다양한 요소들의 조합으로 클래스를 동적으로 만들 수 있다.
+
+타입을 상속받아서 사용하기
+```python
+
+import tornado
+
+
+class Avengers(type):
+    def __new__(cla, name, bases, namespace):
+        return super().__new__(cla, name, bases, namespace)
+
+def Attack():
+    print("망치 뿅뿅")
+
+age = 10
+
+Tor = Avengers ('Tor', (),{'Attack':Attack, 'age' : age} )
+
+Tor.Attack()
+print(Tor.age)
+
+
+##출력
+망치 뿅뿅
+10
+```
+### 메타클래스의 생성
+메타클래스는 클래스를 만들어주는 클래스라고 앞에서 말했다. 그럼 메타클래스는 미리 코드가 실행되어 있어야한다. 그래야 다른 클래스를 생성할 수 있기 때문이다.
+```python
+class Avensers(type):
+    def __new__(cls, *args, **kwargs):
+        print('Avensers __new__')
+        return super().__new__(cls, *args, **kwargs)
+
+    def __init__(cls, *args, **kwargs):
+        print('Avensers __init__')
+        super().__init__(*args, **kwargs)
+
+    def __call__(cls, *args, **kwargs):
+        print('Avensers __call__')
+        return super().__call__(*args, **kwargs)
+
+class Tor(metaclass=Avensers):
+    def __init__(self):
+        print('Tor __init__')
+
+    def __call__(self):
+        print('Tor __call__')
+        
+#출력
+Avensers __new__
+Avensers __init__
+```
+위의 코드를 실행하면 우리는 tor클래스의 인스턴스를 생성하지 않았음에도 불구하고 이미 Avensers가 호출된것을 볼 수 있다. 이유인 즉 메타클래스는 클래스를 만드는 클래스이기 때문에 미리 생성되어 클래스를 만들 준비를 하고 있어야한다.
+```python
+a = Tor()
+
+#출력
+Avensers __call__
+Tor __init__
+```
+Tor객체의 인스턴스인 a를 만들게 되면 Avensers의 call 메소드가 호출되어 avensers의 인스턴스인 Tor가 생성되고 Tor의 인스턴스인 a가 생성되게 된다.
+
+
 
 ## 데코레이터(Decorator)
 데코레이터는 파이썬에서 함수에 추가 기능을 구현할 때 사용한다. 특정 방식이 여러군데 쓰인다면 데코레이터를 쓰는 것이 편리하다.
